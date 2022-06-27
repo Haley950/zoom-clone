@@ -18,14 +18,32 @@ const server = http.createServer(app); //http 서버
 const wss = new WebSocket.Server({ server }); //websocket 서버
 
 //서버에서의 socket은 연결된 브라우저를 의미한다.
-wss.on("connection", (socket) => {
-    console.log('Connected to Browser 🙂');
-    socket.on("close", () => console.log("Disconnected from the Browser 💀"));
-    socket.on("message", (message) => {
-        console.log(message.toString());
-    })
-    socket.send("hello");
-});
+//ex) 이 코드는 두번 작동한다. chrome에 연결될 때와 firefox에 연결될 때.
+//같은 코드가 두개의 브라우저와 연결된 것. 하지만 몇 명이 연결되었는지는 모름.
 
+//그래서 빈 배열을 생성하고,
+const sockets = [];
+wss.on("connection", (socket) => {
+    //연결될 때마다 해당 데이터를 push 해줌.
+    sockets.push(socket);
+    socket["nickname"] = "Anon"; //익명일 때를 대비
+
+    //그리고 어떤 브라우저에서 보낸 메시지든 연결된 브라우저메 모두 send.
+    //메시지를 구분할 수 있는 데이터가 필요.
+    socket.on("message", (msg) => {
+        const message = JSON.parse(msg.toString());
+        switch(message.type) {
+            case "New_message" :
+                sockets.forEach(aSocket => aSocket.send(`${socket.nickname}: ${message.payload}`))
+                break;
+            case "nickname" : //socket이 누군지 알아야 돼서 닉네임 값을 socket에 넣어줘야 됨.
+                socket["nickname"] = message.payload;
+                break;
+        }
+    })
+
+    console.log('Connected to Browser 🙂');
+    socket.on("close", () => console.log("Disconnected Browser 💀"));
+});
 
 server.listen(3000, handleListen);
