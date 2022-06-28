@@ -9,6 +9,13 @@ room.hidden = true;
 
 let roomName = "";
 
+function addMessage(msg) {
+    const ul = room.querySelector('ul');
+    const li = document.createElement('li');
+    li.innerText = msg;
+    ul.appendChild(li);
+}
+
 function showRoom() {
     welcome.hidden = true;
     room.hidden = false;
@@ -23,13 +30,18 @@ function handleSubmit(event) {
     //메시지 보내기(event, object, 함수 등 전달 가능..)
     socket.emit(
         "enter_room", 
-        {payload: input.value},  
+        input.value,  
         showRoom
     );
     roomName = input.value;
     input.value = '';
 }
 form.addEventListener("submit", handleSubmit);
+
+
+socket.on("welcome", () => {
+    addMessage("someone Joined");
+})
 
 
 

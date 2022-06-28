@@ -29,7 +29,10 @@ wsServer.on('connection', socket => {
     socket.on('enter_room', (roomName, done) => {
         socket.join(roomName);
         done();
+        //roomName 방에 참가하면 나를 제외한 안에 있는 모두에게 welcome event를 emit함.
+        socket.to(roomName).emit("welcome");
     });
+    
 })
 
 
