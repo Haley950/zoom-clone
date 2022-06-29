@@ -16,11 +16,36 @@ function addMessage(msg) {
     ul.appendChild(li);
 }
 
+//브라우저 인풋에 입력된 메시지를 서버로 전달
+//(방 이름과 메시지 전달이 완료됐을 때 실행시킬 함수도 같이 보냄)
+function handleMessageSubmit(event) {
+    event.preventDefault();
+    const input = room.querySelector('#msg input');
+    socket.emit('new_message', input.value, roomName, () => {
+        addMessage(`You: ${input.value}`)
+        input.value = "";
+    });
+}
+
+function handleNameSubmit(event) {
+    event.preventDefault();
+    const input = room.querySelector('#name input');
+    socket.emit('nickName', input.value);
+}
+
 function showRoom() {
     welcome.hidden = true;
     room.hidden = false;
     const h3 = room.querySelector('h3');
     h3.innerText = roomName;
+
+    //닉네임
+    const nameForm = room.querySelector('#name');
+    nameForm.addEventListener('submit', handleNameSubmit);
+
+    //메시지 보내기
+    const msgForm = room.querySelector('#msg');
+    msgForm.addEventListener('submit', handleMessageSubmit);
 }
 
 function handleSubmit(event) {
@@ -38,12 +63,36 @@ function handleSubmit(event) {
 }
 form.addEventListener("submit", handleSubmit);
 
-
-socket.on("welcome", () => {
-    addMessage("someone Joined");
+//방 입장
+socket.on("welcome", (user, newCount) => {
+    const h3 = room.querySelector('h3');
+    h3.innerText = roomName + "[" + newCount + "명]";
+    addMessage(`${user}가 입장했습니다.`);
 })
+//방 퇴장
+socket.on("bye", (user, newCount) => {
+    const h3 = room.querySelector('h3');
+    h3.innerText = roomName + "[" + newCount + "명]";
+    addMessage(`${user}가 방을 나갔습니다.`);
+})
+//받은 메시지 띄우기
+socket.on('new_message', addMessage);
 
+socket.on("room_change", (rooms) => {
+    const roomList = welcome.querySelector('ul');
+    roomList.innerHTML = ""; //룸이 누적되기 때문에 룸 목록은 항상 비워줘야 됨. 
 
+    //한번 실행할 때 화면에 방 목록을 paint 해주는데,
+    //재실행 했을 때 목록이 비어있으면 아무것도 실행 안함.
+    if(rooms.length === 0){ //그래서 if문으로 예외처리를 해줘야 됨.
+        return;
+    };
+    rooms.forEach(room => {
+        const li = document.createElement('li');
+        li.innerText = room;
+        roomList.append(li);
+    });
+});
 
 
 
